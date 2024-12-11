@@ -1,6 +1,7 @@
 
 import requests
 import json
+import typing
 
 
 class MyRequest:
@@ -10,17 +11,19 @@ class MyRequest:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36',
         }
         self.session = requests.Session()
-        pass
+        self.verify = True # 不加verify=False的话开启Fiddler抓包状态会抛出SSL Error
 
-    def LoadCookieFromWebDriver(self, wd):
-        cookies = wd.get_cookies()
+    def SetVerify(self, verify: bool):
+        self.verify = verify
+
+    def LoadCookies(self, cookies: typing.List[dict]):
         for cookie in cookies:
             self.session.cookies.set(cookie['name'], cookie['value'])
             # print(cookie)
 
     def Get(self, url: str) -> str:
         print(f"[GET]{url}")
-        response = self.session.get(url, headers=self.req_header) # 不加verify=False的话开启Fiddler抓包状态会抛出SSL Error
+        response = self.session.get(url, headers=self.req_header, verify=self.verify) # 不加verify=False的话开启Fiddler抓包状态会抛出SSL Error
         return response.text
 
     def AddHeader(self, key: str, val: str):
@@ -35,11 +38,11 @@ class MyRequest:
     def Post(self, url: str, data: dict) -> dict:
         self.req_header['Accept'] = 'application/json'
         self.req_header['Content-Type'] = 'application/json'
-        response = self.session.post(url, headers=self.req_header, data=json.dumps(data))
+        response = self.session.post(url, headers=self.req_header, data=json.dumps(data), verify=self.verify)
         return json.loads(response.text)
 
     def Download(self, url: str, destDir: str):
-        response = self.session.get(url, headers=self.req_header)
+        response = self.session.get(url, headers=self.req_header, verify=self.verify)
         filename = url.rpartition("/")[-1]
         with open(destDir + "/" + filename, "wb") as f:
             f.write(response.content)
